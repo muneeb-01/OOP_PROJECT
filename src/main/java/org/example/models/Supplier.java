@@ -15,13 +15,14 @@ public class Supplier extends User {
 
     @Override
     public void showMenu() {
-        System.out.println("\nSupplier Management Menu:");
-        System.out.println("1. Add Supplier");
-        System.out.println("2. Delete Supplier");
-        System.out.println("3. View All Suppliers");
-        System.out.println("4. Find Supplier by ID");
-        System.out.println("5. Update Supplier");
-        System.out.println("Press 'e' or 'Esc' to go back");
+        printMenuBox("SUPPLIER MANAGEMENT", new String[]{
+            "1. Add Supplier",
+            "2. Delete Supplier",
+            "3. View All Suppliers",
+            "4. Find Supplier by ID",
+            "5. Update Supplier",
+            "Press 'e' or 'Esc' to go back"
+        });
     }
 
     @Override
@@ -33,10 +34,10 @@ public class Supplier extends User {
                 case 3 -> findAll(connection);
                 case 4 -> findById(connection, scanner);
                 case 5 -> updateUser(connection, scanner);
-                default -> System.out.println("Invalid choice. Try again.");
+                default -> System.out.println("  ✘ Invalid choice. Try again.");
             }
         } catch (SQLException e) {
-            System.out.println("Database error: " + e.getMessage());
+            System.out.println("  ✘ Database error: " + e.getMessage());
         }
     }
 
@@ -51,33 +52,31 @@ public class Supplier extends User {
             stmt.setString(2, contactInfo);
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                // Retrieve generated ID for confirmation
                 try (PreparedStatement idStmt = connection.prepareStatement(
                         "SELECT last_insert_rowid()");
                      ResultSet rs = idStmt.executeQuery()) {
                     if (rs.next()) {
-                        System.out.println("Supplier added successfully with ID: " + rs.getInt(1));
+                        System.out.println("  ✔ Supplier added successfully with ID: " + rs.getInt(1));
                     }
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error adding supplier: " + e.getMessage());
+            System.out.println("  ✘ Error adding supplier: " + e.getMessage());
             throw e;
         }
     }
 
     @Override
     public void deleteUser(Connection connection, Scanner scanner) throws SQLException {
-        System.out.print("Enter Supplier ID to delete: ");
+        System.out.print("  Enter Supplier ID to delete: ");
         int targetId = getValidId(scanner);
 
-        // Check if supplier has linked raw materials before deleting
         String checkQuery = "SELECT EXISTS(SELECT 1 FROM raw_materials WHERE supplier_id = ?)";
         try (PreparedStatement checkStmt = connection.prepareStatement(checkQuery)) {
             checkStmt.setInt(1, targetId);
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (rs.next() && rs.getInt(1) == 1) {
-                    System.out.println("Warning: Supplier ID " + targetId +
+                    System.out.println("  ✘ Warning: Supplier ID " + targetId +
                             " has linked raw materials. Delete those first.");
                     return;
                 }
@@ -89,23 +88,23 @@ public class Supplier extends User {
             stmt.setInt(1, targetId);
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                System.out.println("Supplier with ID " + targetId + " deleted successfully.");
+                System.out.println("  ✔ Supplier with ID " + targetId + " deleted successfully.");
             } else {
-                System.out.println("No supplier found with ID " + targetId);
+                System.out.println("  ✘ No supplier found with ID " + targetId);
             }
         } catch (SQLException e) {
-            System.out.println("Error deleting supplier: " + e.getMessage());
+            System.out.println("  ✘ Error deleting supplier: " + e.getMessage());
             throw e;
         }
     }
 
     @Override
     public void updateUser(Connection connection, Scanner scanner) throws SQLException {
-        System.out.print("Enter Supplier ID to update: ");
+        System.out.print("  Enter Supplier ID to update: ");
         int targetId = getValidId(scanner);
 
         if (!existsById(connection, targetId)) {
-            System.out.println("No supplier found with ID " + targetId);
+            System.out.println("  ✘ No supplier found with ID " + targetId);
             return;
         }
 
@@ -119,13 +118,24 @@ public class Supplier extends User {
             stmt.setInt(3, targetId);
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                System.out.println("Supplier ID " + targetId + " updated successfully.");
+                System.out.println("  ✔ Supplier ID " + targetId + " updated successfully.");
             } else {
-                System.out.println("Update failed. Supplier not found.");
+                System.out.println("  ✘ Update failed. Supplier not found.");
             }
         } catch (SQLException e) {
-            System.out.println("Error updating supplier: " + e.getMessage());
+            System.out.println("  ✘ Error updating supplier: " + e.getMessage());
             throw e;
         }
+    }
+
+    private static void printMenuBox(String title, String[] options) {
+        int w = 42;
+        System.out.println("\n╔" + "═".repeat(w) + "╗");
+        System.out.printf("║  %-" + (w - 2) + "s║%n", title);
+        System.out.println("╠" + "═".repeat(w) + "╣");
+        for (String opt : options) {
+            System.out.printf("║  %-" + (w - 2) + "s║%n", opt);
+        }
+        System.out.println("╚" + "═".repeat(w) + "╝");
     }
 }

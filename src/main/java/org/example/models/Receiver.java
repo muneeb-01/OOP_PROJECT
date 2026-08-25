@@ -15,13 +15,14 @@ public class Receiver extends User {
 
     @Override
     public void showMenu() {
-        System.out.println("\nReceiver Management Menu:");
-        System.out.println("1. Add Receiver");
-        System.out.println("2. Delete Receiver");
-        System.out.println("3. View All Receivers");
-        System.out.println("4. Find Receiver by ID");
-        System.out.println("5. Update Receiver");
-        System.out.println("Press 'e' or 'Esc' to go back");
+        printMenuBox("RECEIVER MANAGEMENT", new String[]{
+            "1. Add Receiver",
+            "2. Delete Receiver",
+            "3. View All Receivers",
+            "4. Find Receiver by ID",
+            "5. Update Receiver",
+            "Press 'e' or 'Esc' to go back"
+        });
     }
 
     @Override
@@ -33,10 +34,10 @@ public class Receiver extends User {
                 case 3 -> findAll(connection);
                 case 4 -> findById(connection, scanner);
                 case 5 -> updateUser(connection, scanner);
-                default -> System.out.println("Invalid choice. Try again.");
+                default -> System.out.println("  ✘ Invalid choice. Try again.");
             }
         } catch (SQLException e) {
-            System.out.println("Database error: " + e.getMessage());
+            System.out.println("  ✘ Database error: " + e.getMessage());
         }
     }
 
@@ -55,28 +56,27 @@ public class Receiver extends User {
                         "SELECT last_insert_rowid()");
                      ResultSet rs = idStmt.executeQuery()) {
                     if (rs.next()) {
-                        System.out.println("Receiver added successfully with ID: " + rs.getInt(1));
+                        System.out.println("  ✔ Receiver added successfully with ID: " + rs.getInt(1));
                     }
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error adding receiver: " + e.getMessage());
+            System.out.println("  ✘ Error adding receiver: " + e.getMessage());
             throw e;
         }
     }
 
     @Override
     public void deleteUser(Connection connection, Scanner scanner) throws SQLException {
-        System.out.print("Enter Receiver ID to delete: ");
+        System.out.print("  Enter Receiver ID to delete: ");
         int targetId = getValidId(scanner);
 
-        // Guard: check if any orders reference this receiver
         String checkQuery = "SELECT EXISTS(SELECT 1 FROM orders WHERE receiverId = ?)";
         try (PreparedStatement checkStmt = connection.prepareStatement(checkQuery)) {
             checkStmt.setInt(1, targetId);
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (rs.next() && rs.getInt(1) == 1) {
-                    System.out.println("Warning: Receiver ID " + targetId +
+                    System.out.println("  ✘ Warning: Receiver ID " + targetId +
                             " has linked orders. Cannot delete.");
                     return;
                 }
@@ -88,23 +88,23 @@ public class Receiver extends User {
             stmt.setInt(1, targetId);
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                System.out.println("Receiver with ID " + targetId + " deleted successfully.");
+                System.out.println("  ✔ Receiver with ID " + targetId + " deleted successfully.");
             } else {
-                System.out.println("No receiver found with ID " + targetId);
+                System.out.println("  ✘ No receiver found with ID " + targetId);
             }
         } catch (SQLException e) {
-            System.out.println("Error deleting receiver: " + e.getMessage());
+            System.out.println("  ✘ Error deleting receiver: " + e.getMessage());
             throw e;
         }
     }
 
     @Override
     public void updateUser(Connection connection, Scanner scanner) throws SQLException {
-        System.out.print("Enter Receiver ID to update: ");
+        System.out.print("  Enter Receiver ID to update: ");
         int targetId = getValidId(scanner);
 
         if (!existsById(connection, targetId)) {
-            System.out.println("No receiver found with ID " + targetId);
+            System.out.println("  ✘ No receiver found with ID " + targetId);
             return;
         }
 
@@ -118,13 +118,24 @@ public class Receiver extends User {
             stmt.setInt(3, targetId);
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                System.out.println("Receiver ID " + targetId + " updated successfully.");
+                System.out.println("  ✔ Receiver ID " + targetId + " updated successfully.");
             } else {
-                System.out.println("Update failed. Receiver not found.");
+                System.out.println("  ✘ Update failed. Receiver not found.");
             }
         } catch (SQLException e) {
-            System.out.println("Error updating receiver: " + e.getMessage());
+            System.out.println("  ✘ Error updating receiver: " + e.getMessage());
             throw e;
         }
+    }
+
+    private static void printMenuBox(String title, String[] options) {
+        int w = 42;
+        System.out.println("\n╔" + "═".repeat(w) + "╗");
+        System.out.printf("║  %-" + (w - 2) + "s║%n", title);
+        System.out.println("╠" + "═".repeat(w) + "╣");
+        for (String opt : options) {
+            System.out.printf("║  %-" + (w - 2) + "s║%n", opt);
+        }
+        System.out.println("╚" + "═".repeat(w) + "╝");
     }
 }

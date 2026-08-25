@@ -3,6 +3,8 @@ package org.example.models;
 import java.sql.*;
 import java.util.Scanner;
 
+import static org.example.models.TablePrinter.*;
+
 public class FinishGoods implements EntityHandler {
     private int itemId;
     private String name;
@@ -11,15 +13,22 @@ public class FinishGoods implements EntityHandler {
     private int id;
     private int isFullFilled;
 
+    // Column configs
+    private static final String[] HEADERS = {"FG ID", "Name", "Qty", "Item", "Receiver", "Delivered", "Created At"};
+    private static final int[]    WIDTHS  = {7, 14, 5, 16, 16, 11, 22};
+    private static final Align[]  ALIGNS  = {Align.RIGHT, Align.LEFT, Align.RIGHT,
+                                              Align.LEFT, Align.LEFT, Align.LEFT, Align.LEFT};
+
     @Override
     public void showMenu() {
-        System.out.println("\nFinish Goods Management Menu:");
-        System.out.println("1. Display All Finish Goods");
-        System.out.println("2. Find Finish Good by ID");
-        System.out.println("3. Show Delivered Items");
-        System.out.println("4. Show Pending (Undelivered) Items");
-        System.out.println("5. Mark as Delivered");
-        System.out.println("Press 'e' or 'Esc' to go back");
+        printMenuBox("FINISH GOODS MANAGEMENT", new String[]{
+            "1. Display All Finish Goods",
+            "2. Find Finish Good by ID",
+            "3. Show Delivered Items",
+            "4. Show Pending (Undelivered) Items",
+            "5. Mark as Delivered",
+            "Press 'e' or 'Esc' to go back"
+        });
     }
 
     @Override
@@ -30,7 +39,7 @@ public class FinishGoods implements EntityHandler {
             case 3 -> showDeliveredItems(connection);
             case 4 -> showPendingItems(connection);
             case 5 -> markAsDelivered(connection, scanner);
-            default -> System.out.println("Invalid choice. Please try again.");
+            default -> System.out.println("  ✘ Invalid choice. Please try again.");
         }
     }
 
@@ -40,19 +49,18 @@ public class FinishGoods implements EntityHandler {
             try {
                 int val = Integer.parseInt(scanner.nextLine().trim());
                 if (val <= 0) {
-                    System.out.println("Must be a positive number.");
+                    System.out.println("  Must be a positive number.");
                 } else {
                     return val;
                 }
             } catch (NumberFormatException e) {
-                System.out.println("Error: Invalid input. Please enter a valid integer.");
+                System.out.println("  Error: Invalid input. Please enter a valid integer.");
             }
         }
     }
 
     // ── Display All Finish Goods ──────────────────────────────────────────────────
     public void displayOrders(Connection connection) {
-        // JOIN with items and receiver for human-readable output
         String query = """
                 SELECT fg.orderId, fg.name, fg.quantity,
                        i.name AS item_name, fg.itemId,
@@ -68,7 +76,7 @@ public class FinishGoods implements EntityHandler {
 
     // ── Find By ID ────────────────────────────────────────────────────────────────
     public void findById(Connection connection, Scanner scanner) {
-        System.out.print("Enter Finish Good ID: ");
+        System.out.print("  Enter Finish Good ID: ");
         int targetId = getValidInt(scanner);
 
         String query = """
@@ -86,15 +94,28 @@ public class FinishGoods implements EntityHandler {
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, targetId);
             try (ResultSet rs = stmt.executeQuery()) {
+                printTopBorder(WIDTHS);
+                printRow(HEADERS, WIDTHS, ALIGNS);
+                printMidBorder(WIDTHS);
+
                 if (rs.next()) {
-                    printHeader();
-                    printRow(rs);
+                    String status = rs.getInt("fulfilled") == 1 ? "✔ Yes" : "⏳ Pending";
+                    printRow(new String[]{
+                            String.valueOf(rs.getInt("orderId")),
+                            rs.getString("name"),
+                            String.valueOf(rs.getInt("quantity")),
+                            rs.getString("item_name"),
+                            rs.getString("receiver_name"),
+                            status,
+                            rs.getString("createdAt")
+                    }, WIDTHS, ALIGNS);
                 } else {
-                    System.out.println("No finish good found with ID " + targetId);
+                    printEmptyBox("  No finish good found with ID " + targetId, 99);
                 }
+                printBotBorder(WIDTHS);
             }
         } catch (SQLException e) {
-            System.out.println("Error finding finish good: " + e.getMessage());
+            System.out.println("  ✘ Error finding finish good: " + e.getMessage());
         }
     }
 
@@ -132,25 +153,24 @@ public class FinishGoods implements EntityHandler {
 
     // ── Mark as Delivered ─────────────────────────────────────────────────────────
     public void markAsDelivered(Connection connection, Scanner scanner) {
-        System.out.print("Enter Finish Good ID to mark as delivered: ");
+        System.out.print("  Enter Finish Good ID to mark as delivered: ");
         int targetId = getValidInt(scanner);
 
-        // Check if already delivered
         String checkQuery = "SELECT fulfilled FROM finish_goods WHERE orderId = ? LIMIT 1";
         try (PreparedStatement checkStmt = connection.prepareStatement(checkQuery)) {
             checkStmt.setInt(1, targetId);
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (!rs.next()) {
-                    System.out.println("No finish good found with ID " + targetId);
+                    System.out.println("  ✘ No finish good found with ID " + targetId);
                     return;
                 }
                 if (rs.getInt("fulfilled") == 1) {
-                    System.out.println("Finish Good ID " + targetId + " is already marked as delivered.");
+                    System.out.println("  ✔ Finish Good ID " + targetId + " is already marked as delivered.");
                     return;
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error checking delivery status: " + e.getMessage());
+            System.out.println("  ✘ Error checking delivery status: " + e.getMessage());
             return;
         }
 
@@ -159,12 +179,12 @@ public class FinishGoods implements EntityHandler {
             stmt.setInt(1, targetId);
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                System.out.println("Finish Good ID " + targetId + " marked as delivered.");
+                System.out.println("  ✔ Finish Good ID " + targetId + " marked as delivered.");
             } else {
-                System.out.println("Update failed.");
+                System.out.println("  ✘ Update failed.");
             }
         } catch (SQLException e) {
-            System.out.println("Error updating delivery status: " + e.getMessage());
+            System.out.println("  ✘ Error updating delivery status: " + e.getMessage());
         }
     }
 
@@ -175,33 +195,40 @@ public class FinishGoods implements EntityHandler {
                 stmt.setInt(i + 1, params[i]);
             }
             try (ResultSet rs = stmt.executeQuery()) {
-                printHeader();
+                printTopBorder(WIDTHS);
+                printRow(HEADERS, WIDTHS, ALIGNS);
+                printMidBorder(WIDTHS);
+
                 boolean hasRows = false;
                 while (rs.next()) {
                     hasRows = true;
-                    printRow(rs);
+                    String status = rs.getInt("fulfilled") == 1 ? "✔ Yes" : "⏳ Pending";
+                    printRow(new String[]{
+                            String.valueOf(rs.getInt("orderId")),
+                            rs.getString("name"),
+                            String.valueOf(rs.getInt("quantity")),
+                            rs.getString("item_name"),
+                            rs.getString("receiver_name"),
+                            status,
+                            rs.getString("createdAt")
+                    }, WIDTHS, ALIGNS);
                 }
-                if (!hasRows) System.out.println("No records found.");
+                if (!hasRows) printEmptyBox("  No records found.", 99);
+                printBotBorder(WIDTHS);
             }
         } catch (SQLException e) {
-            System.out.println("Error fetching finish goods: " + e.getMessage());
+            System.out.println("  ✘ Error fetching finish goods: " + e.getMessage());
         }
     }
 
-    private void printHeader() {
-        System.out.printf("%n%-8s  %-12s  %-8s  %-15s  %-15s  %-10s  %s%n",
-                "ID", "Name", "Qty", "Item", "Receiver", "Delivered", "CreatedAt");
-        System.out.println("-".repeat(90));
-    }
-
-    private void printRow(ResultSet rs) throws SQLException {
-        System.out.printf("%-8d  %-12s  %-8d  %-15s  %-15s  %-10s  %s%n",
-                rs.getInt("orderId"),
-                rs.getString("name"),
-                rs.getInt("quantity"),
-                rs.getString("item_name"),
-                rs.getString("receiver_name"),
-                rs.getInt("fulfilled") == 1 ? "Yes" : "No",
-                rs.getString("createdAt"));
+    private static void printMenuBox(String title, String[] options) {
+        int w = 44;
+        System.out.println("\n╔" + "═".repeat(w) + "╗");
+        System.out.printf("║  %-" + (w - 2) + "s║%n", title);
+        System.out.println("╠" + "═".repeat(w) + "╣");
+        for (String opt : options) {
+            System.out.printf("║  %-" + (w - 2) + "s║%n", opt);
+        }
+        System.out.println("╚" + "═".repeat(w) + "╝");
     }
 }

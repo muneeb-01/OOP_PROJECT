@@ -5,7 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
+
+import static org.example.models.TablePrinter.*;
 
 public class Order implements EntityHandler {
     private String name;
@@ -15,16 +19,23 @@ public class Order implements EntityHandler {
     private int isFullFilled = 0;
     private int id;
 
+    // Column config
+    private static final String[] HEADERS = {"Order ID", "Name", "Qty", "Item", "Receiver", "Status", "Created At"};
+    private static final int[]    WIDTHS  = {8, 14, 5, 16, 16, 9, 22};
+    private static final Align[]  ALIGNS  = {Align.RIGHT, Align.LEFT, Align.RIGHT,
+                                              Align.LEFT, Align.LEFT, Align.LEFT, Align.LEFT};
+
     @Override
     public void showMenu() {
-        System.out.println("\nOrder Management Menu:");
-        System.out.println("1. Add Order");
-        System.out.println("2. Delete Order");
-        System.out.println("3. Display All Orders");
-        System.out.println("4. Find Order by ID");
-        System.out.println("5. Mark Order as Completed");
-        System.out.println("6. Update Order Quantity");
-        System.out.println("Press 'e' or 'Esc' to go back");
+        printMenuBox("ORDER MANAGEMENT", new String[]{
+            "1. Add Order",
+            "2. Delete Order",
+            "3. Display All Orders",
+            "4. Find Order by ID",
+            "5. Mark Order as Completed",
+            "6. Update Order Quantity",
+            "Press 'e' or 'Esc' to go back"
+        });
     }
 
     @Override
@@ -36,7 +47,7 @@ public class Order implements EntityHandler {
             case 4 -> findById(connection, scanner);
             case 5 -> completion(connection, scanner);
             case 6 -> updateOrderQuantity(connection, scanner);
-            default -> System.out.println("Invalid choice. Please try again.");
+            default -> System.out.println("  ✘ Invalid choice. Please try again.");
         }
     }
 
@@ -45,13 +56,10 @@ public class Order implements EntityHandler {
         while (true) {
             try {
                 int val = Integer.parseInt(scanner.nextLine().trim());
-                if (val <= 0) {
-                    System.out.println("Must be a positive number.");
-                } else {
-                    return val;
-                }
+                if (val <= 0) System.out.println("  Must be a positive number.");
+                else return val;
             } catch (NumberFormatException e) {
-                System.out.println("Error: Invalid input. Please enter a valid integer.");
+                System.out.println("  Error: Please enter a valid integer.");
             }
         }
     }
@@ -60,13 +68,10 @@ public class Order implements EntityHandler {
         while (true) {
             try {
                 int val = Integer.parseInt(scanner.nextLine().trim());
-                if (val < 0 || val > 1) {
-                    System.out.println("Error: Enter 1 for fulfilled or 0 for pending.");
-                } else {
-                    return val;
-                }
+                if (val < 0 || val > 1) System.out.println("  Enter 1 (fulfilled) or 0 (pending).");
+                else return val;
             } catch (NumberFormatException e) {
-                System.out.println("Error: Enter 1 for true or 0 for false.");
+                System.out.println("  Error: Enter 1 for true or 0 for false.");
             }
         }
     }
@@ -74,44 +79,40 @@ public class Order implements EntityHandler {
     public String getValidString(Scanner scanner) {
         while (true) {
             String input = scanner.nextLine().trim();
-            if (input.isEmpty()) {
-                System.out.println("Error: Field cannot be empty.");
-            } else {
-                return input;
-            }
+            if (input.isEmpty()) System.out.println("  Error: Field cannot be empty.");
+            else return input;
         }
     }
 
     // ── Add Order ─────────────────────────────────────────────────────────────────
     public void addOrder(Connection connection, Scanner scanner) {
         try {
-            System.out.print("Enter Order Name: ");
+            System.out.print("  Enter Order Name: ");
             this.name = getValidString(scanner);
 
-            System.out.print("Enter Item ID: ");
+            System.out.print("  Enter Item ID: ");
             this.itemId = getValidInt(scanner);
             if (!existsInTable(connection, "items", "itemId", this.itemId)) {
-                System.out.println("Item not found. Please enter a valid Item ID.");
+                System.out.println("  ✘ Item not found. Please enter a valid Item ID.");
                 return;
             }
 
-            System.out.print("Enter Receiver ID: ");
+            System.out.print("  Enter Receiver ID: ");
             this.receiverID = getValidInt(scanner);
             if (!existsInTable(connection, "receiver", "id", this.receiverID)) {
-                System.out.println("Receiver not found. Please enter a valid Receiver ID.");
+                System.out.println("  ✘ Receiver not found. Please enter a valid Receiver ID.");
                 return;
             }
 
-            System.out.print("Enter Quantity: ");
+            System.out.print("  Enter Quantity: ");
             this.quantity = getValidInt(scanner);
 
-            // Check and deduct raw materials within a transaction
             if (!deductRawMaterialsForOrder(connection, this.itemId, this.quantity)) {
-                System.out.println("Insufficient raw materials. Order not placed.");
+                System.out.println("  ✘ Insufficient raw materials. Order not placed.");
                 return;
             }
 
-            System.out.print("Is the order fulfilled? (0 = No, 1 = Yes): ");
+            System.out.print("  Is the order fulfilled? (0 = Pending, 1 = Fulfilled): ");
             this.isFullFilled = getIsFullFilled(scanner);
 
             String insertOrderQuery = """
@@ -131,21 +132,18 @@ public class Order implements EntityHandler {
                 int rows = pstmt.executeUpdate();
                 if (rows > 0) {
                     try (ResultSet keys = pstmt.getGeneratedKeys()) {
-                        if (keys.next()) {
-                            this.id = keys.getInt(1);
-                        }
+                        if (keys.next()) this.id = keys.getInt(1);
                     }
-                    System.out.println("Order added successfully! Order ID: " + this.id);
-
-                    // If already marked fulfilled, move to finish_goods immediately
+                    System.out.println("  ✔ Order added successfully! Order ID: " + this.id);
                     if (this.isFullFilled == 1) {
                         moveToFinishGoods(connection, this.id,
                                 this.name, this.itemId, this.receiverID, this.quantity);
+                        System.out.println("  ✔ Order immediately moved to Finish Goods.");
                     }
                     connection.commit();
                 } else {
                     connection.rollback();
-                    System.out.println("Failed to add the order.");
+                    System.out.println("  ✘ Failed to add the order.");
                 }
             } catch (SQLException e) {
                 connection.rollback();
@@ -155,38 +153,35 @@ public class Order implements EntityHandler {
             }
 
         } catch (SQLException e) {
-            System.out.println("Error adding the order: " + e.getMessage());
+            System.out.println("  ✘ Error adding the order: " + e.getMessage());
         }
     }
 
     // ── Delete Order ──────────────────────────────────────────────────────────────
     public void deleteOrder(Connection connection, Scanner scanner) {
-        System.out.print("Enter Order ID to delete: ");
-        int orderID = getValidInt(scanner);   // fixed: was scanner.nextInt()
+        System.out.print("  Enter Order ID to delete: ");
+        int orderID = getValidInt(scanner);
 
         try (PreparedStatement stmt = connection.prepareStatement(
                 "DELETE FROM orders WHERE orderId = ?")) {
             stmt.setInt(1, orderID);
             int rows = stmt.executeUpdate();
-            if (rows > 0) {
-                System.out.println("Order ID " + orderID + " deleted successfully.");
-            } else {
-                System.out.println("No order found with ID " + orderID);
-            }
+            System.out.println(rows > 0
+                    ? "  ✔ Order ID " + orderID + " deleted successfully."
+                    : "  ✘ No order found with ID " + orderID);
         } catch (SQLException e) {
-            System.out.println("Error deleting order: " + e.getMessage());
+            System.out.println("  ✘ Error deleting order: " + e.getMessage());
         }
     }
 
     // ── Display All Orders ────────────────────────────────────────────────────────
     public void displayOrders(Connection connection) {
-        // JOIN with receiver and item names for more readable output
         String query = """
-                SELECT o.orderId, o.name, o.quantity, o.itemId,
-                       i.name AS item_name, o.receiverId,
-                       r.name AS receiver_name, o.fulfilled, o.createdAt
+                SELECT o.orderId, o.name, o.quantity,
+                       i.name AS item_name, r.name AS receiver_name,
+                       o.fulfilled, o.createdAt
                 FROM orders o
-                LEFT JOIN items i ON o.itemId = i.itemId
+                LEFT JOIN items i    ON o.itemId    = i.itemId
                 LEFT JOIN receiver r ON o.receiverId = r.id
                 ORDER BY o.orderId
                 """;
@@ -194,75 +189,79 @@ public class Order implements EntityHandler {
         try (PreparedStatement stmt = connection.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
 
-            System.out.printf("%n%-8s  %-12s  %-8s  %-15s  %-15s  %-10s  %s%n",
-                    "OrderID", "Name", "Qty", "Item", "Receiver", "Fulfilled", "CreatedAt");
-            System.out.println("-".repeat(90));
+            printTopBorder(WIDTHS);
+            printRow(HEADERS, WIDTHS, ALIGNS);
+            printMidBorder(WIDTHS);
 
             boolean hasRows = false;
             while (rs.next()) {
                 hasRows = true;
-                System.out.printf("%-8d  %-12s  %-8d  %-15s  %-15s  %-10s  %s%n",
-                        rs.getInt("orderId"),
+                String status = rs.getInt("fulfilled") == 1 ? "✔ Done" : "⏳ Pending";
+                printRow(new String[]{
+                        String.valueOf(rs.getInt("orderId")),
                         rs.getString("name"),
-                        rs.getInt("quantity"),
+                        String.valueOf(rs.getInt("quantity")),
                         rs.getString("item_name"),
                         rs.getString("receiver_name"),
-                        rs.getInt("fulfilled") == 1 ? "Yes" : "No",
-                        rs.getString("createdAt"));
+                        status,
+                        rs.getString("createdAt")
+                }, WIDTHS, ALIGNS);
             }
-            if (!hasRows) System.out.println("No orders found.");
+            if (!hasRows) printEmptyBox("  No orders found.", 98);
+            printBotBorder(WIDTHS);
 
         } catch (SQLException e) {
-            System.out.println("Error fetching orders: " + e.getMessage());
+            System.out.println("  ✘ Error fetching orders: " + e.getMessage());
         }
     }
 
     // ── Find By ID ────────────────────────────────────────────────────────────────
     public void findById(Connection connection, Scanner scanner) {
-        System.out.print("Enter Order ID: ");
-        int targetId = getValidInt(scanner);   // fixed: was scanner.nextInt()
+        System.out.print("  Enter Order ID: ");
+        int targetId = getValidInt(scanner);
 
         String query = """
-                SELECT o.orderId, o.name, o.quantity, o.itemId,
-                       i.name AS item_name, o.receiverId,
-                       r.name AS receiver_name, o.fulfilled, o.createdAt
+                SELECT o.orderId, o.name, o.quantity,
+                       i.name AS item_name, r.name AS receiver_name,
+                       o.fulfilled, o.createdAt
                 FROM orders o
-                LEFT JOIN items i ON o.itemId = i.itemId
+                LEFT JOIN items i    ON o.itemId    = i.itemId
                 LEFT JOIN receiver r ON o.receiverId = r.id
-                WHERE o.orderId = ?
-                LIMIT 1
+                WHERE o.orderId = ? LIMIT 1
                 """;
 
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, targetId);
             try (ResultSet rs = stmt.executeQuery()) {
+                printTopBorder(WIDTHS);
+                printRow(HEADERS, WIDTHS, ALIGNS);
+                printMidBorder(WIDTHS);
                 if (rs.next()) {
-                    System.out.printf("%n%-8s  %-12s  %-8s  %-15s  %-15s  %-10s  %s%n",
-                            "OrderID", "Name", "Qty", "Item", "Receiver", "Fulfilled", "CreatedAt");
-                    System.out.println("-".repeat(90));
-                    System.out.printf("%-8d  %-12s  %-8d  %-15s  %-15s  %-10s  %s%n",
-                            rs.getInt("orderId"),
+                    String status = rs.getInt("fulfilled") == 1 ? "✔ Done" : "⏳ Pending";
+                    printRow(new String[]{
+                            String.valueOf(rs.getInt("orderId")),
                             rs.getString("name"),
-                            rs.getInt("quantity"),
+                            String.valueOf(rs.getInt("quantity")),
                             rs.getString("item_name"),
                             rs.getString("receiver_name"),
-                            rs.getInt("fulfilled") == 1 ? "Yes" : "No",
-                            rs.getString("createdAt"));
+                            status,
+                            rs.getString("createdAt")
+                    }, WIDTHS, ALIGNS);
                 } else {
-                    System.out.println("No order found with ID " + targetId);
+                    printEmptyBox("  No order found with ID " + targetId, 98);
                 }
+                printBotBorder(WIDTHS);
             }
         } catch (SQLException e) {
-            System.out.println("Error finding order: " + e.getMessage());
+            System.out.println("  ✘ Error finding order: " + e.getMessage());
         }
     }
 
-    // ── Mark Order as Completed ───────────────────────────────────────────────────
+    // ── Mark as Completed ─────────────────────────────────────────────────────────
     public void completion(Connection connection, Scanner scanner) {
-        System.out.print("Enter Order ID to mark as completed: ");
-        int targetId = getValidInt(scanner);   // fixed: was scanner.nextInt()
+        System.out.print("  Enter Order ID to mark as completed: ");
+        int targetId = getValidInt(scanner);
 
-        // Fetch order data from DB (bug fix: was using stale instance fields)
         String selectQuery = """
                 SELECT orderId, name, itemId, receiverId, quantity
                 FROM orders WHERE orderId = ? LIMIT 1
@@ -272,20 +271,20 @@ public class Order implements EntityHandler {
             stmt.setInt(1, targetId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (!rs.next()) {
-                    System.out.println("No order found with ID " + targetId);
+                    System.out.println("  ✘ No order found with ID " + targetId);
                     return;
                 }
-                int orderId    = rs.getInt("orderId");
-                String oName   = rs.getString("name");
-                int oItemId    = rs.getInt("itemId");
+                int orderId     = rs.getInt("orderId");
+                String oName    = rs.getString("name");
+                int oItemId     = rs.getInt("itemId");
                 int oReceiverId = rs.getInt("receiverId");
-                int oQuantity  = rs.getInt("quantity");
+                int oQuantity   = rs.getInt("quantity");
 
                 connection.setAutoCommit(false);
                 try {
                     moveToFinishGoods(connection, orderId, oName, oItemId, oReceiverId, oQuantity);
                     connection.commit();
-                    System.out.println("Order ID " + orderId + " marked as completed and moved to Finish Goods.");
+                    System.out.println("  ✔ Order ID " + orderId + " completed and moved to Finish Goods.");
                 } catch (SQLException e) {
                     connection.rollback();
                     throw e;
@@ -294,28 +293,26 @@ public class Order implements EntityHandler {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error completing order: " + e.getMessage());
+            System.out.println("  ✘ Error completing order: " + e.getMessage());
         }
     }
 
     // ── Update Order Quantity ─────────────────────────────────────────────────────
     public void updateOrderQuantity(Connection connection, Scanner scanner) {
-        System.out.print("Enter Order ID: ");
-        int orderId = getValidInt(scanner);   // fixed: was scanner.nextInt()
-
-        System.out.print("Enter New Quantity: ");
-        int newQuantity = getValidInt(scanner);   // fixed: was scanner.nextInt()
+        System.out.print("  Enter Order ID: ");
+        int orderId = getValidInt(scanner);
+        System.out.print("  Enter New Quantity: ");
+        int newQuantity = getValidInt(scanner);
 
         try {
             String selectQuery = "SELECT quantity, itemId FROM orders WHERE orderId = ? LIMIT 1";
-            int currentQuantity;
-            int currentItemId;
+            int currentQuantity, currentItemId;
 
             try (PreparedStatement pstmt = connection.prepareStatement(selectQuery)) {
                 pstmt.setInt(1, orderId);
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (!rs.next()) {
-                        System.out.println("Order not found with ID " + orderId);
+                        System.out.println("  ✘ Order not found with ID " + orderId);
                         return;
                     }
                     currentQuantity = rs.getInt("quantity");
@@ -325,9 +322,8 @@ public class Order implements EntityHandler {
 
             int additionalQuantity = newQuantity - currentQuantity;
             if (additionalQuantity > 0) {
-                // Only deduct extra raw materials needed for the increased quantity
                 if (!deductRawMaterialsForOrder(connection, currentItemId, additionalQuantity)) {
-                    System.out.println("Insufficient raw materials for the quantity increase.");
+                    System.out.println("  ✘ Insufficient raw materials for quantity increase.");
                     return;
                 }
             }
@@ -337,24 +333,17 @@ public class Order implements EntityHandler {
                 pstmt.setInt(1, newQuantity);
                 pstmt.setInt(2, orderId);
                 int rows = pstmt.executeUpdate();
-                if (rows > 0) {
-                    System.out.println("Order ID " + orderId + " quantity updated to " + newQuantity);
-                } else {
-                    System.out.println("Failed to update order quantity.");
-                }
+                System.out.println(rows > 0
+                        ? "  ✔ Order ID " + orderId + " quantity updated to " + newQuantity
+                        : "  ✘ Failed to update order quantity.");
             }
 
         } catch (SQLException e) {
-            System.out.println("Error updating order quantity: " + e.getMessage());
+            System.out.println("  ✘ Error updating order quantity: " + e.getMessage());
         }
     }
 
     // ── Private Helpers ───────────────────────────────────────────────────────────
-
-    /**
-     * Moves an order to finish_goods and deletes it from orders.
-     * Must be called within a transaction.
-     */
     private void moveToFinishGoods(Connection connection,
                                    int orderId, String oName, int oItemId,
                                    int oReceiverId, int oQuantity) throws SQLException {
@@ -369,7 +358,6 @@ public class Order implements EntityHandler {
             pstmt.setInt(4, oQuantity);
             pstmt.executeUpdate();
         }
-
         try (PreparedStatement pstmt = connection.prepareStatement(
                 "DELETE FROM orders WHERE orderId = ?")) {
             pstmt.setInt(1, orderId);
@@ -377,14 +365,8 @@ public class Order implements EntityHandler {
         }
     }
 
-    /**
-     * Checks raw material availability for all raw materials linked to an item,
-     * then deducts the required quantity using a single JOIN query.
-     * Returns false if any raw material is insufficient.
-     */
     private boolean deductRawMaterialsForOrder(Connection connection,
                                                int itemId, int quantity) throws SQLException {
-        // Fetch all linked raw materials in one JOIN query
         String fetchQuery = """
                 SELECT rm.id, rm.name, rm.quantity AS available
                 FROM items_raw_materials irm
@@ -395,26 +377,22 @@ public class Order implements EntityHandler {
         try (PreparedStatement stmt = connection.prepareStatement(fetchQuery)) {
             stmt.setInt(1, itemId);
             try (ResultSet rs = stmt.executeQuery()) {
-                // Collect insufficiency first before any updates
-                java.util.List<int[]> toDeduct = new java.util.ArrayList<>();
+                List<Integer> toDeduct = new ArrayList<>();
                 while (rs.next()) {
-                    int rmId    = rs.getInt("id");
-                    int avail   = rs.getInt("available");
-                    String rmName = rs.getString("name");
+                    int rmId  = rs.getInt("id");
+                    int avail = rs.getInt("available");
                     if (avail < quantity) {
-                        System.out.printf("Insufficient '%s' (ID %d). Required: %d, Available: %d%n",
-                                rmName, rmId, quantity, avail);
+                        System.out.printf("  ✘ Insufficient '%s' (ID %d). Required: %d, Available: %d%n",
+                                rs.getString("name"), rmId, quantity, avail);
                         return false;
                     }
-                    toDeduct.add(new int[]{rmId});
+                    toDeduct.add(rmId);
                 }
-
-                // All materials available – deduct in batch
                 String deductQuery = "UPDATE raw_materials SET quantity = quantity - ? WHERE id = ?";
                 try (PreparedStatement deductStmt = connection.prepareStatement(deductQuery)) {
-                    for (int[] rm : toDeduct) {
+                    for (int rmId : toDeduct) {
                         deductStmt.setInt(1, quantity);
-                        deductStmt.setInt(2, rm[0]);
+                        deductStmt.setInt(2, rmId);
                         deductStmt.addBatch();
                     }
                     deductStmt.executeBatch();
@@ -424,9 +402,6 @@ public class Order implements EntityHandler {
         return true;
     }
 
-    /**
-     * Optimized existence check using SQL EXISTS.
-     */
     private boolean existsInTable(Connection connection, String table,
                                   String column, int value) throws SQLException {
         String query = "SELECT EXISTS(SELECT 1 FROM " + table + " WHERE " + column + " = ?)";
@@ -436,5 +411,16 @@ public class Order implements EntityHandler {
                 return rs.next() && rs.getInt(1) == 1;
             }
         }
+    }
+
+    private static void printMenuBox(String title, String[] options) {
+        int w = 42;
+        System.out.println("\n╔" + "═".repeat(w) + "╗");
+        System.out.printf("║  %-" + (w - 2) + "s║%n", title);
+        System.out.println("╠" + "═".repeat(w) + "╣");
+        for (String opt : options) {
+            System.out.printf("║  %-" + (w - 2) + "s║%n", opt);
+        }
+        System.out.println("╚" + "═".repeat(w) + "╝");
     }
 }
