@@ -1,0 +1,46 @@
+class Animal {
+
+    String name = "Animal";
+}
+
+class Dog extends Animal {
+
+    String name = "Dog";
+
+    void display() {
+        System.out.println(super.name);
+        System.out.println(this.name);
+    }
+}
+
+class Animal {
+
+    void sound() {
+        System.out.println("Animal sound");
+    }
+}
+
+class Dog extends Animal {
+
+    void sound() {
+
+        super.sound();
+
+        System.out.println("Dog bark");
+    }
+}
+
+class Animal {
+
+    Animal() {
+        System.out.println("Animal Constructor");
+    }
+}
+
+class Dog extends Animal {
+
+    Dog() {
+        super();
+        System.out.println("Dog Constructor");
+    }
+}

@@ -1,0 +1,88 @@
+import java.util.Scanner;
+
+interface Payment {
+
+    void makePayment(double amount);
+}
+
+class CreditCardPayment implements Payment {
+
+    @Override
+    public void makePayment(double amount) {
+        System.out.println(
+            "Paid Rs. " + amount + " using Credit Card");
+    }
+}
+
+class PayPalPayment implements Payment {
+
+    @Override
+    public void makePayment(double amount) {
+        System.out.println(
+            "Paid Rs. " + amount + " using PayPal");
+    }
+}
+
+class CashPayment implements Payment {
+
+    @Override
+    public void makePayment(double amount) {
+        System.out.println(
+            "Paid Rs. " + amount + " using Cash");
+    }
+}
+
+public class Main {
+
+    public static void main(String[] args) {
+
+        Scanner input = new Scanner(System.in);
+
+        int choice;
+
+        // Keep asking until correct payment type is selected
+        while (true) {
+
+            System.out.println("\nSelect Payment Method:");
+            System.out.println("1. Credit Card");
+            System.out.println("2. PayPal");
+            System.out.println("3. Cash");
+
+            System.out.print("Enter your choice: ");
+            choice = input.nextInt();
+
+            if (choice >= 1 && choice <= 3) {
+                break;
+            }
+
+            System.out.println("Invalid choice! Please enter 1, 2, or 3.");
+        }
+
+        System.out.print("Enter amount: ");
+        double amount = input.nextDouble();
+
+        Payment payment;
+
+        switch (choice) {
+
+            case 1:
+                payment = new CreditCardPayment();
+                break;
+
+            case 2:
+                payment = new PayPalPayment();
+                break;
+
+            case 3:
+                payment = new CashPayment();
+                break;
+
+            default:
+                payment = null;
+        }
+
+        payment.makePayment(amount);
+
+        input.close();
+    }
+}

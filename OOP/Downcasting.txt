@@ -1,0 +1,5 @@
+Animal a = new Dog();
+
+Dog d = (Dog) a;
+
+d.sound();

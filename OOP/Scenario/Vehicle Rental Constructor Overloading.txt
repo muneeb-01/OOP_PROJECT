@@ -1,0 +1,78 @@
+class Vehicle {
+
+    String model;
+    int year;
+    double rentalPrice;
+
+    // Constructor 1
+    Vehicle(String model) {
+        this.model = model;
+    }
+
+    // Constructor 2
+    Vehicle(String model, int year, double rentalPrice) {
+        this.model = model;
+        this.year = year;
+        this.rentalPrice = rentalPrice;
+    }
+
+    void display() {
+        System.out.println("Model: " + model);
+        System.out.println("Year: " + year);
+        System.out.println("Rental Price: " + rentalPrice);
+    }
+}
+
+class Car extends Vehicle {
+
+    Car(String model, int year, double rentalPrice) {
+        super(model, year, rentalPrice);
+    }
+
+    void carInfo() {
+        System.out.println("This is a Car.");
+    }
+}
+
+class Bike extends Vehicle {
+
+    Bike(String model, int year, double rentalPrice) {
+        super(model, year, rentalPrice);
+    }
+
+    void bikeInfo() {
+        System.out.println("This is a Bike.");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+
+        Vehicle v1 = new Vehicle("Toyota");
+
+        Vehicle v2 =
+                new Vehicle("Honda", 2024, 5000);
+
+        Car car =
+                new Car("Corolla", 2023, 7000);
+
+        Bike bike =
+                new Bike("Honda 125", 2024, 2000);
+
+        v1.display();
+
+        System.out.println();
+
+        v2.display();
+
+        System.out.println();
+
+        car.display();
+        car.carInfo();
+
+        System.out.println();
+
+        bike.display();
+        bike.bikeInfo();
+    }
+}

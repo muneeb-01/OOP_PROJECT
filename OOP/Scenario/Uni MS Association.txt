@@ -1,0 +1,80 @@
+import java.util.ArrayList;
+
+class Student {
+
+    String name;
+    int rollNo;
+
+    ArrayList<Course> courses = new ArrayList<>();
+
+    Student(String name, int rollNo) {
+        this.name = name;
+        this.rollNo = rollNo;
+    }
+
+    void registerCourse(Course course) {
+
+        courses.add(course);
+        course.addStudent(this);
+
+        System.out.println(
+            name + " registered in " + course.courseName);
+    }
+
+    void displayCourses() {
+
+        System.out.println("Student: " + name);
+
+        for (Course c : courses) {
+            System.out.println(c.courseName);
+        }
+    }
+}
+
+class Course {
+
+    String courseName;
+
+    ArrayList<Student> students = new ArrayList<>();
+
+    Course(String courseName) {
+        this.courseName = courseName;
+    }
+
+    void addStudent(Student student) {
+        students.add(student);
+    }
+
+    void displayStudents() {
+
+        System.out.println("Course: " + courseName);
+
+        for (Student s : students) {
+            System.out.println(s.name);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+
+        Student s1 = new Student("Ali", 101);
+        Student s2 = new Student("Ahmed", 102);
+
+        Course c1 = new Course("OOP");
+        Course c2 = new Course("Database");
+
+        s1.registerCourse(c1);
+        s1.registerCourse(c2);
+
+        s2.registerCourse(c1);
+
+        System.out.println();
+
+        s1.displayCourses();
+
+        System.out.println();
+
+        c1.displayStudents();
+    }
+}

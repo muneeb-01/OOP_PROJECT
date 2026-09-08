@@ -1,0 +1,58 @@
+class BankAccount {
+
+    private String accountNumber;
+    private String customerName;
+    private double balance;
+
+    // Constructor
+    BankAccount(String accountNumber, String customerName, double balance) {
+        this.accountNumber = accountNumber;
+        this.customerName = customerName;
+        this.balance = balance;
+    }
+
+    // Getter
+    public double getBalance() {
+        return balance;
+    }
+
+    // Deposit
+    public void deposit(double amount) {
+        if (amount > 0) {
+            balance = balance + amount;
+            System.out.println("Amount deposited: " + amount);
+        }
+    }
+
+    // Withdraw
+    public void withdraw(double amount) {
+        if (amount <= balance) {
+            balance = balance - amount;
+            System.out.println("Amount withdrawn: " + amount);
+        } else {
+            System.out.println("Insufficient balance!");
+        }
+    }
+
+    public void display() {
+        System.out.println("Account Number: " + accountNumber);
+        System.out.println("Customer Name: " + customerName);
+        System.out.println("Balance: " + balance);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+
+        BankAccount account =
+                new BankAccount("12345", "Ali", 50000);
+
+        account.display();
+
+        account.deposit(10000);
+        account.withdraw(5000);
+
+        System.out.println("Final Balance: "
+                + account.getBalance());
+    }
+}

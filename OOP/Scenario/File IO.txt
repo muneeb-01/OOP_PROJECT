@@ -1,0 +1,63 @@
+import java.io.*;
+
+public class StudentFileIO {
+    public static void main(String[] args) {
+
+        String fileName = "students.txt";
+
+        // ---------- FILE OUTPUT ----------
+        try {
+            FileWriter writer = new FileWriter(fileName);
+
+            writer.write("Ali 80\n");
+            writer.write("Ahmed 75\n");
+            writer.write("Sara 90\n");
+            writer.write("Fatima 85\n");
+            writer.write("Usman 70\n");
+
+            writer.close();
+
+            System.out.println("Data successfully written to file.");
+
+        } catch (IOException e) {
+            System.out.println("Error while writing file: " + e.getMessage());
+        }
+
+
+        // ---------- FILE INPUT ----------
+        int totalMarks = 0;
+        int studentCount = 0;
+
+        try {
+            FileReader reader = new FileReader(fileName);
+            BufferedReader br = new BufferedReader(reader);
+
+            String line;
+
+            System.out.println("\nStudent Records:");
+
+            while ((line = br.readLine()) != null) {
+
+                String[] data = line.split(" ");
+
+                String name = data[0];
+                int marks = Integer.parseInt(data[1]);
+
+                System.out.println("Name: " + name + ", Marks: " + marks);
+
+                totalMarks += marks;
+                studentCount++;
+            }
+
+            br.close();
+
+            double average = (double) totalMarks / studentCount;
+
+            System.out.println("\nTotal Marks: " + totalMarks);
+            System.out.println("Average Marks: " + average);
+
+        } catch (IOException e) {
+            System.out.println("Error while reading file: " + e.getMessage());
+        }
+    }
+}

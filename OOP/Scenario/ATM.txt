@@ -1,0 +1,87 @@
+class Account {
+
+    private String name;
+    private double balance;
+    private int pin;
+
+    Account(String name, double balance, int pin) {
+        this.name = name;
+        this.balance = balance;
+        this.pin = pin;
+    }
+
+    boolean verifyPin(int enteredPin) {
+        return pin == enteredPin;
+    }
+
+    void checkBalance() {
+        System.out.println("Current Balance: Rs. " + balance);
+    }
+
+    void deposit(double amount) {
+
+        if (amount > 0) {
+            balance = balance + amount;
+            System.out.println(
+                "Deposited: Rs. " + amount);
+        }
+    }
+
+    void withdraw(double amount) {
+
+        if (amount <= balance) {
+            balance = balance - amount;
+
+            System.out.println(
+                "Withdrawn: Rs. " + amount);
+        } else {
+            System.out.println("Insufficient Balance!");
+        }
+    }
+
+    void changePin(int oldPin, int newPin) {
+
+        if (pin == oldPin) {
+            pin = newPin;
+            System.out.println("PIN changed successfully.");
+        } else {
+            System.out.println("Incorrect old PIN.");
+        }
+    }
+}
+
+class ATM {
+
+    void login(Account account, int pin) {
+
+        if (account.verifyPin(pin)) {
+            System.out.println("Login Successful.");
+        } else {
+            System.out.println("Incorrect PIN.");
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+
+        Account account =
+                new Account("Ali", 50000, 1234);
+
+        ATM atm = new ATM();
+
+        // Login
+        atm.login(account, 1234);
+
+        // Operations
+        account.checkBalance();
+
+        account.deposit(10000);
+
+        account.withdraw(5000);
+
+        account.checkBalance();
+
+        account.changePin(1234, 5678);
+    }
+}

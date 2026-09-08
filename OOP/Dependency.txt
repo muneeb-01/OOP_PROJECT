@@ -1,0 +1,9 @@
+class Printer {
+
+    void print(Document d) {
+        System.out.println("Printing document");
+    }
+}
+
+class Document {
+}

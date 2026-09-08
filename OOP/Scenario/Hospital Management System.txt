@@ -1,0 +1,74 @@
+class Doctor {
+
+    String name;
+    String specialization;
+    double fee;
+
+    Doctor(String name, String specialization, double fee) {
+        this.name = name;
+        this.specialization = specialization;
+        this.fee = fee;
+    }
+
+    void displayDoctor() {
+        System.out.println("Doctor: " + name);
+        System.out.println("Specialization: " + specialization);
+        System.out.println("Fee: " + fee);
+    }
+}
+
+class Patient {
+
+    String name;
+    int age;
+    String disease;
+
+    Patient(String name, int age, String disease) {
+        this.name = name;
+        this.age = age;
+        this.disease = disease;
+    }
+
+    void displayPatient() {
+        System.out.println("Patient: " + name);
+        System.out.println("Age: " + age);
+        System.out.println("Disease: " + disease);
+    }
+}
+
+class Hospital {
+
+    Doctor doctor;
+    Patient patient;
+
+    Hospital(Doctor doctor, Patient patient) {
+        this.doctor = doctor;
+        this.patient = patient;
+    }
+
+    void displayInformation() {
+
+        System.out.println("Doctor Information:");
+        doctor.displayDoctor();
+
+        System.out.println();
+
+        System.out.println("Patient Information:");
+        patient.displayPatient();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+
+        Doctor d =
+                new Doctor("Dr. Ahmed", "Cardiologist", 3000);
+
+        Patient p =
+                new Patient("Ali", 25, "Heart Problem");
+
+        Hospital h = new Hospital(d, p);
+
+        h.displayInformation();
+    }
+}
